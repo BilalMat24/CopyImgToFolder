@@ -5,7 +5,7 @@ import java.util.Date;
 
 public class Main {
     private static final String BASE_PATH = "C:\\Users\\bilal.biaz\\ProgettoVIT\\cams";
-    private static final String DEST_PATH = "C:\\Users\\bilal.biaz\\ProgettoVIT\\ControlloImmagini\\nuovaImmagini\\2024\\12\\03\\";
+    private static final String DEST_PATH = "C:\\Users\\bilal.biaz\\ProgettoVIT\\ControlloImmagini\\nuovaImmagini\\2024\\12\\16\\";
 
     public static void main(String[] args) {
         File baseDir = new File(BASE_PATH);
@@ -49,7 +49,7 @@ public class Main {
         for (File file : files) {
             try {
                 // Genera il nuovo nome del file basato sul timestamp mantenendo il formato richiesto
-                File renamedFile = sostituisciNomeImmagine(file, destSubDir);
+                File renamedFile = sostituisciNomeImmagine(file, destSubDir.getPath(), sourceSubDir.getName());
 
                 // Copia il file con il nuovo nome nella directory corrispondente
                 Files.copy(file.toPath(), renamedFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -66,20 +66,44 @@ public class Main {
                 Thread.currentThread().interrupt();
             }
         }
+
     }
 
-    private static File sostituisciNomeImmagine(File file, File destDir) {
+    private static File sostituisciNomeImmagine(File file, String destPath, String sourceSubDirName) {
+        // Parte iniziale fissa
+        String fixedPrefix = "2024725000";
+
+        // Generazione del timestamp attuale
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMddHHmmss");
         String timestamp = dateFormat.format(new Date());
-        String originalFileName = file.getName();
 
-        // Sostituisci la parte del timestamp nel nome originale
-        String[] parts = originalFileName.split("_");
-        if (parts.length >= 3) {
-            parts[1] = timestamp; // Aggiorna solo il timestamp centrale
-        }
-        String newFileName = String.join("_", parts);
+        // Estrazione del nome del file originale
+        String originalName = file.getName();
+        String camPart = extractCamPart(originalName, sourceSubDirName); // Passiamo il fallback della cartella
 
-        return new File(destDir, newFileName);
+        // Composizione del nuovo nome
+        String newFileName = String.format("%s_%s_%s.jpg", fixedPrefix, timestamp, camPart);
+
+        // Creazione del nuovo file nella directory di destinazione
+        return new File(destPath, newFileName);
     }
+
+
+    // Metodo di supporto per estrarre la parte "camXXX" dal nome originale
+    private static String extractCamPart(String originalName, String sourceSubDirName) {
+        String[] parts = originalName.split("_");
+
+        // Si assume che la parte "camXXX" sia sempre l'ultima parte valida prima dell'estensione
+        String lastPart = parts[parts.length - 1];
+
+        // Rimuove l'estensione, se presente
+        if (lastPart.contains(".")) {
+            lastPart = lastPart.substring(0, lastPart.lastIndexOf('.'));
+        }
+
+        // Controllo: restituisce solo se è nel formato "camXXX", altrimenti usa il nome della cartella
+        return lastPart.matches("cam\\d+") ? lastPart : sourceSubDirName;
+    }
+
+
 }
